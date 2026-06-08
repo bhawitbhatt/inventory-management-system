@@ -1,0 +1,16 @@
+{
+  "name": "Stocky — Inventory & Order Management",
+  "short_name": "Stocky",
+  "description": "A fast, friendly inventory & order management system.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0d9488",
+  "background_color": "#0f172a",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "categories": ["business", "productivity"]
+}
