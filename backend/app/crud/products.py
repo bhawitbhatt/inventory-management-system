@@ -43,7 +43,10 @@ def create_product(db: Session, payload: ProductCreate) -> Product:
 
 
 def update_product(db: Session, product_id: int, payload: ProductUpdate) -> Product:
-    product = get_product(db, product_id)
+    stmt = select(Product).where(Product.id == product_id).with_for_update()
+    product = db.scalars(stmt).first()
+    if product is None:
+        raise NotFoundError(f"Product {product_id} not found.")
 
     data = payload.model_dump(exclude_unset=True)
 

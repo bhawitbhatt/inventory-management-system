@@ -26,6 +26,16 @@ class Settings(BaseSettings):
         description="Comma-separated allowed CORS origins.",
     )
 
+    cors_origin_regex: str = Field(
+        default=r"^https://inventory-management-system-ten-omega(-[a-z0-9-]+)?\.vercel\.app$",
+        description="Regex matching the project's Vercel preview URLs. Empty disables regex.",
+    )
+
+    docs_enabled: bool = Field(
+        default=True,
+        description="If false, /docs, /redoc, and /openapi.json are disabled (set false in prod).",
+    )
+
     low_stock_threshold: int = Field(
         default=10,
         ge=0,

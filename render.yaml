@@ -30,3 +30,5 @@ services:
         sync: false
       - key: LOW_STOCK_THRESHOLD
         value: "10"
+      - key: DOCS_ENABLED
+        value: "false"
