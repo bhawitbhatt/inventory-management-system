@@ -1,0 +1,32 @@
+# =============================================================================
+# Render Blueprint — one-click deploy of the backend + PostgreSQL.
+# Usage: in the Render dashboard, click "New +" → "Blueprint" → connect this
+# repo. Render will provision the database first, then build and start the
+# backend, wiring DATABASE_URL automatically.
+# =============================================================================
+databases:
+  - name: inventory-db
+    plan: free
+    databaseName: inventory_db
+    user: inventory
+
+services:
+  - type: web
+    name: inventory-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: inventory-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        # Set this to your deployed frontend origin via the Render dashboard,
+        # e.g. https://your-app.vercel.app. The backend also allows any
+        # *.vercel.app preview URL via allow_origin_regex (see main.py).
+        sync: false
+      - key: LOW_STOCK_THRESHOLD
+        value: "10"

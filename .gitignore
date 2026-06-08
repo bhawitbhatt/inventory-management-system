@@ -1,0 +1,68 @@
+# ===== Python / Backend =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.cache
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ===== Node / Frontend =====
+node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+*.local
+.pnp.*
+.yarn/cache
+.yarn/install-state.gz
+
+# ===== Env / Secrets =====
+.env
+.env.local
+.env.*.local
+!.env.example
+*.pem
+
+# ===== Editors / OS =====
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ===== Logs =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== Docker =====
+.docker/
+
+# ===== Misc =====
+*.bak
+*.tmp
+.omo/
+
+# Original assessment briefs — kept locally for reference, not committed
+Assesment Instructions.txt
+Technical Assessment (Software Engineer).txt
