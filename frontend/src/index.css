@@ -1,50 +1,186 @@
+@import '@fontsource-variable/inter/index.css';
+@import '@fontsource-variable/jetbrains-mono/index.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   Design tokens (HSL channels so Tailwind can compute alpha via <alpha-value>)
+   ========================================================================== */
+:root {
+  --background: 210 20% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --muted: 210 16% 95%;
+  --muted-foreground: 215 16% 47%;
+  --secondary: 210 16% 95%;
+  --secondary-foreground: 222 47% 11%;
+  --accent: 210 16% 95%;
+  --accent-foreground: 222 47% 11%;
+  --border: 214 16% 90%;
+  --input: 214 16% 90%;
+  --ring: 173 80% 36%;
+  --primary: 173 80% 36%;
+  --primary-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 152 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warn: 38 92% 50%;
+  --warn-foreground: 222 47% 11%;
+  --info: 199 89% 48%;
+  --info-foreground: 0 0% 100%;
+  --shadow-color: 222 47% 11%;
+  --radius: 0.625rem;
+  /* Brand tonal scale — teal-derived */
+  --brand-50:  166 76% 97%;
+  --brand-100: 167 85% 89%;
+  --brand-200: 168 84% 78%;
+  --brand-300: 171 77% 64%;
+  --brand-400: 172 66% 50%;
+  --brand-500: 173 80% 40%;
+  --brand-600: 173 80% 36%;
+  --brand-700: 175 77% 26%;
+  --brand-800: 176 69% 22%;
+  --brand-900: 176 61% 19%;
+  --brand-950: 180 86% 11%;
+}
+
+.dark {
+  --background: 222 47% 6%;
+  --foreground: 210 20% 96%;
+  --card: 222 47% 9%;
+  --card-foreground: 210 20% 96%;
+  --popover: 222 47% 9%;
+  --popover-foreground: 210 20% 96%;
+  --muted: 222 28% 17%;
+  --muted-foreground: 215 16% 65%;
+  --secondary: 222 28% 17%;
+  --secondary-foreground: 210 20% 96%;
+  --accent: 222 28% 17%;
+  --accent-foreground: 210 20% 96%;
+  --border: 222 28% 20%;
+  --input: 222 28% 20%;
+  --ring: 173 80% 50%;
+  --primary: 173 80% 50%;
+  --primary-foreground: 222 47% 9%;
+  --destructive: 0 70% 55%;
+  --destructive-foreground: 210 20% 96%;
+  --shadow-color: 222 60% 4%;
+}
+
+/* ============================================================================
+   Base layer
+   ========================================================================== */
 @layer base {
-  html,
-  body,
-  #root {
-    height: 100%;
-  }
+  *, ::before, ::after { border-color: hsl(var(--border)); }
+  html, body, #root { height: 100%; }
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Tabular nums + slashed zero by default for monospaced contexts */
+  .font-mono, code, pre, kbd {
+    font-feature-settings: 'zero' 1;
+  }
+  /* Headings */
+  h1 { letter-spacing: -0.025em; line-height: 1.15; }
+  h2 { letter-spacing: -0.02em;  line-height: 1.2;  }
+  h3 { letter-spacing: -0.015em; line-height: 1.25; }
+  /* Focus rings */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  /* Skip-to-content (a11y) */
+  .skip-link {
+    position: absolute;
+    left: 8px;
+    top: -40px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    z-index: 50;
+    transition: top 150ms;
+  }
+  .skip-link:focus { top: 8px; }
+  ::selection {
+    background-color: hsl(var(--primary) / 0.18);
+    color: hsl(var(--primary));
+  }
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
+/* ============================================================================
+   Component layer — keep @apply to native tailwind atoms only
+   ========================================================================== */
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
   }
-  .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700 focus:ring-brand-500;
-  }
-  .btn-secondary {
-    @apply btn bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-slate-400;
-  }
-  .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
-  }
-  .btn-ghost {
-    @apply btn text-slate-600 hover:bg-slate-100 focus:ring-slate-300;
-  }
+  .btn-primary    { @apply btn bg-primary text-primary-foreground hover:bg-primary/90; }
+  .btn-secondary  { @apply btn bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border; }
+  .btn-danger     { @apply btn bg-destructive text-destructive-foreground hover:bg-destructive/90; }
+  .btn-ghost      { @apply btn text-foreground hover:bg-accent hover:text-accent-foreground; }
+  .btn-outline    { @apply btn border border-border bg-transparent hover:bg-accent hover:text-accent-foreground; }
   .input {
-    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-slate-100;
+    @apply flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .label {
-    @apply block text-sm font-medium text-slate-700 mb-1;
+    @apply block text-sm font-medium text-foreground mb-1.5;
   }
   .card {
-    @apply rounded-lg border border-slate-200 bg-white shadow-sm;
+    @apply rounded-xl border border-border bg-card text-card-foreground shadow-sm;
   }
   .badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center rounded-full border border-transparent px-2.5 py-0.5 text-xs font-semibold transition-colors;
   }
+  .badge-success { @apply bg-success text-success-foreground; }
+  .badge-warn    { @apply bg-warn text-warn-foreground; }
+  .badge-info    { @apply bg-info text-info-foreground; }
+  .badge-danger  { @apply bg-destructive text-destructive-foreground; }
+  .badge-muted   { @apply bg-muted text-muted-foreground; }
   .table-th {
-    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500;
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
   }
   .table-td {
-    @apply px-4 py-3 text-sm text-slate-700;
+    @apply px-4 py-3 text-sm text-foreground;
   }
+  .table-td-mono {
+    @apply px-4 py-3 text-sm text-foreground font-mono tabular-nums;
+  }
+  .table-td-numeric {
+    @apply px-4 py-3 text-sm text-foreground text-right tabular-nums;
+  }
+  .skeleton {
+    @apply animate-pulse rounded-md bg-muted;
+  }
+}
+
+/* ============================================================================
+   Utilities
+   ========================================================================== */
+@layer utilities {
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+  .slashed-zero { font-feature-settings: 'zero' 1; }
+  .text-balance { text-wrap: balance; }
+  .text-pretty  { text-wrap: pretty; }
 }
