@@ -1,21 +1,52 @@
-export default function StatCard({ label, value, hint, accent = 'brand' }) {
-  const accentClasses = {
-    brand: 'bg-brand-50 text-brand-700',
-    amber: 'bg-amber-50 text-amber-700',
-    green: 'bg-emerald-50 text-emerald-700',
-    slate: 'bg-slate-100 text-slate-700',
-  }[accent]
+import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card.jsx'
+import { cn } from '../lib/utils.js'
+
+const accentClasses = {
+  brand: 'bg-primary/10 text-primary',
+  amber: 'bg-warn/15 text-warn',
+  green: 'bg-success/15 text-success',
+  slate: 'bg-muted text-muted-foreground',
+  rose: 'bg-destructive/15 text-destructive',
+  info: 'bg-info/15 text-info',
+}
+
+export default function StatCard({ label, value, hint, accent = 'brand', delta, icon: Icon }) {
+  const trendIcon =
+    delta == null ? null : delta > 0 ? ArrowUp : delta < 0 ? ArrowDown : Minus
+  const trendClass =
+    delta == null
+      ? 'text-muted-foreground'
+      : delta > 0
+        ? 'text-success'
+        : delta < 0
+          ? 'text-destructive'
+          : 'text-muted-foreground'
 
   return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-slate-500">{label}</p>
-        <span className={`badge ${accentClasses}`}>•</span>
-      </div>
-      <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-        {value ?? '—'}
-      </p>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
-    </div>
+    <Card className="transition-colors hover:bg-card/80">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+        <div className={cn('flex h-7 w-7 items-center justify-center rounded-md', accentClasses[accent] || accentClasses.brand)}>
+          {Icon ? <Icon className="h-4 w-4" aria-hidden /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-baseline gap-2">
+          <div className="text-2xl font-semibold tabular-nums tracking-tight text-foreground">{value ?? '—'}</div>
+          {trendIcon && (
+            <div className={cn('flex items-center gap-0.5 text-xs font-medium', trendClass)}>
+              {(() => {
+                const Trend = trendIcon
+                return <Trend className="h-3 w-3" aria-hidden />
+              })()}
+              <span>{Math.abs(delta).toFixed(1)}%</span>
+            </div>
+          )}
+        </div>
+        {hint && <CardDescription className="mt-1 text-xs">{hint}</CardDescription>}
+      </CardContent>
+    </Card>
   )
 }
