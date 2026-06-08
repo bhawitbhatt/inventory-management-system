@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -19,16 +19,18 @@ def get_customer(db: Session, customer_id: int) -> Customer:
 
 
 def get_customer_by_email(db: Session, email: str) -> Customer | None:
-    return db.scalar(select(Customer).where(Customer.email == email))
+    norm = email.strip().lower()
+    return db.scalar(select(Customer).where(func.lower(Customer.email) == norm))
 
 
 def create_customer(db: Session, payload: CustomerCreate) -> Customer:
-    if get_customer_by_email(db, payload.email) is not None:
-        raise ConflictError(f"Customer with email '{payload.email}' already exists.")
+    email = payload.email.strip().lower()
+    if get_customer_by_email(db, email) is not None:
+        raise ConflictError(f"Customer with email '{email}' already exists.")
 
     customer = Customer(
         full_name=payload.full_name,
-        email=payload.email,
+        email=email,
         phone=payload.phone,
     )
     db.add(customer)
