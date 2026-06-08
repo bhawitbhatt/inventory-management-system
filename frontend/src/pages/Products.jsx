@@ -20,7 +20,7 @@ export default function Products() {
     queryFn: productsApi.list,
   })
 
-  const [editing, setEditing] = useState(null) // null | 'new' | product
+  const [editing, setEditing] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
   const createMut = useMutation({
@@ -62,7 +62,7 @@ export default function Products() {
   if (isLoading) return <Spinner />
   if (error) {
     return (
-      <div className="card border-red-200 bg-red-50 p-5 text-sm text-red-800">
+      <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-sm text-destructive">
         Failed to load products: {error.message}
       </div>
     )
@@ -72,8 +72,8 @@ export default function Products() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Products</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Products</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Manage your product catalog and inventory levels.
           </p>
         </div>
@@ -94,8 +94,8 @@ export default function Products() {
         />
       ) : (
         <div className="card overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
                 <th className="table-th">SKU</th>
                 <th className="table-th">Name</th>
@@ -105,36 +105,36 @@ export default function Products() {
                 <th className="table-th text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-border bg-background">
               {data.map((p) => (
                 <tr key={p.id}>
                   <td className="table-td font-mono text-xs">{p.sku}</td>
-                  <td className="table-td font-medium text-slate-900">{p.name}</td>
+                  <td className="table-td font-medium text-foreground">{p.name}</td>
                   <td className="table-td">{formatCurrency(p.price)}</td>
                   <td className="table-td">
                     <span
                       className={
                         p.quantity_in_stock <= 10
-                          ? 'badge bg-amber-50 text-amber-700'
-                          : 'badge bg-emerald-50 text-emerald-700'
+                          ? 'badge bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                          : 'badge bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
                       }
                     >
                       {p.quantity_in_stock}
                     </span>
                   </td>
-                  <td className="table-td text-slate-500">{formatDateTime(p.updated_at)}</td>
+                  <td className="table-td text-muted-foreground">{formatDateTime(p.updated_at)}</td>
                   <td className="table-td text-right">
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
-                        className="btn-ghost px-2 py-1 text-xs"
+                        className="btn-ghost px-3 py-1.5 text-sm"
                         onClick={() => setEditing(p)}
                       >
                         Edit
                       </button>
                       <button
                         type="button"
-                        className="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                        className="btn-ghost px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
                         onClick={() => setConfirmDelete(p)}
                       >
                         Delete
@@ -242,7 +242,7 @@ function ProductFormModal({ open, product, onClose, onSubmit, busy }) {
             placeholder="e.g. Wireless Headphones"
             {...register('name', { required: 'Name is required', maxLength: 200 })}
           />
-          {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
+          {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
         </div>
         <div>
           <label className="label" htmlFor="sku">
@@ -254,7 +254,7 @@ function ProductFormModal({ open, product, onClose, onSubmit, busy }) {
             placeholder="e.g. WH-1000"
             {...register('sku', { required: 'SKU is required', maxLength: 64 })}
           />
-          {errors.sku && <p className="mt-1 text-xs text-red-600">{errors.sku.message}</p>}
+          {errors.sku && <p className="mt-1 text-xs text-destructive">{errors.sku.message}</p>}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -273,7 +273,7 @@ function ProductFormModal({ open, product, onClose, onSubmit, busy }) {
                 min: { value: 0, message: 'Must be ≥ 0' },
               })}
             />
-            {errors.price && <p className="mt-1 text-xs text-red-600">{errors.price.message}</p>}
+            {errors.price && <p className="mt-1 text-xs text-destructive">{errors.price.message}</p>}
           </div>
           <div>
             <label className="label" htmlFor="qty">
@@ -293,7 +293,7 @@ function ProductFormModal({ open, product, onClose, onSubmit, busy }) {
               })}
             />
             {errors.quantity_in_stock && (
-              <p className="mt-1 text-xs text-red-600">{errors.quantity_in_stock.message}</p>
+              <p className="mt-1 text-xs text-destructive">{errors.quantity_in_stock.message}</p>
             )}
           </div>
         </div>

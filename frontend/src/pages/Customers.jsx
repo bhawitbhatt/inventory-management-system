@@ -50,7 +50,7 @@ export default function Customers() {
   if (isLoading) return <Spinner />
   if (error) {
     return (
-      <div className="card border-red-200 bg-red-50 p-5 text-sm text-red-800">
+      <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-sm text-destructive">
         Failed to load customers: {error.message}
       </div>
     )
@@ -60,8 +60,8 @@ export default function Customers() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Customers</h1>
-          <p className="mt-1 text-sm text-slate-500">Manage customer records.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Customers</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Manage customer records.</p>
         </div>
         <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
           + Add customer
@@ -80,8 +80,8 @@ export default function Customers() {
         />
       ) : (
         <div className="card overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
                 <th className="table-th">Name</th>
                 <th className="table-th">Email</th>
@@ -90,17 +90,17 @@ export default function Customers() {
                 <th className="table-th text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-border bg-background">
               {data.map((c) => (
                 <tr key={c.id}>
-                  <td className="table-td font-medium text-slate-900">{c.full_name}</td>
+                  <td className="table-td font-medium text-foreground">{c.full_name}</td>
                   <td className="table-td">{c.email}</td>
                   <td className="table-td">{c.phone}</td>
-                  <td className="table-td text-slate-500">{formatDateTime(c.created_at)}</td>
+                  <td className="table-td text-muted-foreground">{formatDateTime(c.created_at)}</td>
                   <td className="table-td text-right">
                     <button
                       type="button"
-                      className="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                      className="btn-ghost px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
                       onClick={() => setConfirmDelete(c)}
                     >
                       Delete
@@ -193,7 +193,7 @@ function CustomerFormModal({ open, onClose, onSubmit, busy }) {
             {...register('full_name', { required: 'Name is required', maxLength: 200 })}
           />
           {errors.full_name && (
-            <p className="mt-1 text-xs text-red-600">{errors.full_name.message}</p>
+            <p className="mt-1 text-xs text-destructive">{errors.full_name.message}</p>
           )}
         </div>
         <div>
@@ -210,7 +210,7 @@ function CustomerFormModal({ open, onClose, onSubmit, busy }) {
               pattern: { value: EMAIL_PATTERN, message: 'Enter a valid email' },
             })}
           />
-          {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+          {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
         </div>
         <div>
           <label className="label" htmlFor="phone">
@@ -226,7 +226,7 @@ function CustomerFormModal({ open, onClose, onSubmit, busy }) {
               maxLength: 32,
             })}
           />
-          {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
+          {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone.message}</p>}
         </div>
       </form>
     </Modal>

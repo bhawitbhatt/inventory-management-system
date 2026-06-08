@@ -54,22 +54,31 @@ export function TopBar({ onOpenSidebar, onOpenCommand }) {
 
       <ThemeToggle />
 
-      <Button variant="ghost" size="icon" aria-label="Notifications">
-        <Bell className="h-4 w-4" />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" aria-label="Notifications">
+            <Bell className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem disabled>No new notifications</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="User menu">
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-primary-foreground">AK</AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground">U</AvatarFallback>
             </Avatar>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>
             <div className="flex flex-col">
-              <span className="font-medium">Akash</span>
+              <span className="font-medium">Demo user</span>
               <span className="text-xs text-muted-foreground">Demo mode</span>
             </div>
           </DropdownMenuLabel>

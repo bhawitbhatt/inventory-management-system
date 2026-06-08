@@ -19,7 +19,6 @@ export default function OrderNew() {
   const productsQ = useQuery({ queryKey: ['products'], queryFn: productsApi.list })
 
   const [customerId, setCustomerId] = useState('')
-  // items: array of { product_id: string, quantity: number }
   const [items, setItems] = useState([{ product_id: '', quantity: 1 }])
 
   const products = productsQ.data || []
@@ -100,7 +99,6 @@ export default function OrderNew() {
       toast.error('Add at least one item')
       return
     }
-    // Client-side stock pre-check (server still enforces — this is just early UX)
     const aggregated = new Map()
     for (const it of valid) {
       const key = String(it.product_id)
@@ -128,16 +126,19 @@ export default function OrderNew() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">New order</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">New order</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Pick a customer, add line items, and confirm. Stock is decremented automatically.
         </p>
       </header>
 
       <form className="space-y-6" onSubmit={onSubmit}>
         <section className="card p-5">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">Customer</h2>
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
+            <label htmlFor="order-customer">Customer</label>
+          </h2>
           <select
+            id="order-customer"
             className="input"
             value={customerId}
             onChange={(e) => setCustomerId(e.target.value)}
@@ -153,7 +154,7 @@ export default function OrderNew() {
 
         <section className="card p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900">Items</h2>
+            <h2 className="text-sm font-semibold text-foreground">Items</h2>
             <button type="button" className="btn-secondary text-xs" onClick={addItem}>
               + Add item
             </button>
@@ -162,14 +163,17 @@ export default function OrderNew() {
             {items.map((it, index) => {
               const p = productMap.get(String(it.product_id))
               const lineTotal = p ? Number(p.price) * Number(it.quantity || 0) : 0
+              const productId = `order-item-${index}-product`
+              const quantityId = `order-item-${index}-quantity`
               return (
                 <div
                   key={index}
-                  className="grid grid-cols-1 gap-3 rounded-md border border-slate-200 p-3 sm:grid-cols-[1fr_120px_120px_auto] sm:items-end"
+                  className="grid grid-cols-1 gap-3 rounded-md border border-border p-3 sm:grid-cols-[1fr_120px_120px_auto] sm:items-end"
                 >
                   <div>
-                    <label className="label">Product</label>
+                    <label className="label" htmlFor={productId}>Product</label>
                     <select
+                      id={productId}
                       className="input"
                       value={it.product_id}
                       onChange={(e) => updateItem(index, { product_id: e.target.value })}
@@ -183,8 +187,9 @@ export default function OrderNew() {
                     </select>
                   </div>
                   <div>
-                    <label className="label">Quantity</label>
+                    <label className="label" htmlFor={quantityId}>Quantity</label>
                     <input
+                      id={quantityId}
                       type="number"
                       min="1"
                       step="1"
@@ -196,14 +201,14 @@ export default function OrderNew() {
                     />
                   </div>
                   <div>
-                    <label className="label">Line total</label>
-                    <div className="input bg-slate-50 font-medium">
+                    <span className="label block">Line total</span>
+                    <div className="input bg-muted font-medium">
                       {formatCurrency(lineTotal)}
                     </div>
                   </div>
                   <button
                     type="button"
-                    className="btn-ghost text-xs text-red-600 hover:bg-red-50"
+                    className="btn-ghost px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
                     onClick={() => removeItem(index)}
                     disabled={items.length === 1}
                   >
@@ -217,12 +222,12 @@ export default function OrderNew() {
 
         <section className="card p-5">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-muted-foreground">
               Server will recompute the total — this is a preview.
             </span>
             <div className="text-right">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Subtotal</p>
-              <p className="text-2xl font-semibold text-slate-900">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Subtotal</p>
+              <p className="text-2xl font-semibold text-foreground">
                 {formatCurrency(subtotal)}
               </p>
             </div>

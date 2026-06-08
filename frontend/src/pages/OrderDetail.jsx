@@ -16,7 +16,7 @@ export default function OrderDetail() {
   if (error) {
     return (
       <div className="space-y-4">
-        <div className="card border-red-200 bg-red-50 p-5 text-sm text-red-800">
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-sm text-destructive">
           Failed to load order: {error.message}
         </div>
         <Link to="/orders" className="btn-secondary">
@@ -30,11 +30,11 @@ export default function OrderDetail() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm text-slate-500">Order</p>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          <p className="text-sm text-muted-foreground">Order</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             #{data.id}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Placed {formatDateTime(data.created_at)}
           </p>
         </div>
@@ -45,10 +45,10 @@ export default function OrderDetail() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <section className="card p-5 md:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">Items</h2>
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Items</h2>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted">
                 <tr>
                   <th className="table-th">Product</th>
                   <th className="table-th">SKU</th>
@@ -57,10 +57,10 @@ export default function OrderDetail() {
                   <th className="table-th text-right">Line total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-border bg-background">
                 {data.items.map((it) => (
                   <tr key={it.id}>
-                    <td className="table-td font-medium text-slate-900">
+                    <td className="table-td font-medium text-foreground">
                       {it.product?.name ?? `Product ${it.product_id}`}
                     </td>
                     <td className="table-td font-mono text-xs">
@@ -74,7 +74,7 @@ export default function OrderDetail() {
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-slate-50">
+              <tfoot className="bg-muted">
                 <tr>
                   <td className="table-td font-semibold" colSpan={4}>
                     Total
@@ -89,29 +89,29 @@ export default function OrderDetail() {
         </section>
 
         <section className="card p-5">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">Customer</h2>
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Customer</h2>
           {data.customer ? (
             <dl className="space-y-2 text-sm">
               <div>
-                <dt className="text-xs uppercase tracking-wide text-slate-500">Name</dt>
-                <dd className="font-medium text-slate-900">{data.customer.full_name}</dd>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Name</dt>
+                <dd className="font-medium text-foreground">{data.customer.full_name}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-slate-500">Email</dt>
-                <dd className="text-slate-700">{data.customer.email}</dd>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Email</dt>
+                <dd className="text-foreground">{data.customer.email}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-slate-500">Phone</dt>
-                <dd className="text-slate-700">{data.customer.phone}</dd>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Phone</dt>
+                <dd className="text-foreground">{data.customer.phone}</dd>
               </div>
             </dl>
           ) : (
-            <p className="text-sm text-slate-500">Customer #{data.customer_id}</p>
+            <p className="text-sm text-muted-foreground">Customer #{data.customer_id}</p>
           )}
-          <hr className="my-4 border-slate-200" />
-          <p className="text-xs uppercase tracking-wide text-slate-500">Status</p>
+          <hr className="my-4 border-border" />
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">Status</p>
           <p>
-            <span className="badge mt-1 bg-emerald-50 text-emerald-700">{data.status}</span>
+            <span className="badge mt-1 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">{data.status}</span>
           </p>
         </section>
       </div>

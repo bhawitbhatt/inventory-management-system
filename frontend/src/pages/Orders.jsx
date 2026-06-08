@@ -37,7 +37,7 @@ export default function Orders() {
   if (isLoading) return <Spinner />
   if (error) {
     return (
-      <div className="card border-red-200 bg-red-50 p-5 text-sm text-red-800">
+      <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-sm text-destructive">
         Failed to load orders: {error.message}
       </div>
     )
@@ -47,8 +47,8 @@ export default function Orders() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Orders</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Orders</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Create and review customer orders. Stock is decremented automatically on confirmation.
           </p>
         </div>
@@ -69,8 +69,8 @@ export default function Orders() {
         />
       ) : (
         <div className="card overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
                 <th className="table-th">Order #</th>
                 <th className="table-th">Customer</th>
@@ -81,34 +81,34 @@ export default function Orders() {
                 <th className="table-th text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-border bg-background">
               {data.map((o) => (
                 <tr key={o.id}>
                   <td className="table-td font-mono text-xs">
                     <Link
                       to={`/orders/${o.id}`}
-                      className="text-brand-600 hover:underline"
+                      className="text-primary hover:underline"
                     >
                       #{o.id}
                     </Link>
                   </td>
-                  <td className="table-td font-medium text-slate-900">
+                  <td className="table-td font-medium text-foreground">
                     {o.customer?.full_name ?? `Customer ${o.customer_id}`}
                   </td>
                   <td className="table-td">{o.items.length}</td>
                   <td className="table-td font-semibold">{formatCurrency(o.total_amount)}</td>
                   <td className="table-td">
-                    <span className="badge bg-emerald-50 text-emerald-700">{o.status}</span>
+                    <span className="badge bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">{o.status}</span>
                   </td>
-                  <td className="table-td text-slate-500">{formatDateTime(o.created_at)}</td>
+                  <td className="table-td text-muted-foreground">{formatDateTime(o.created_at)}</td>
                   <td className="table-td text-right">
                     <div className="flex justify-end gap-2">
-                      <Link to={`/orders/${o.id}`} className="btn-ghost px-2 py-1 text-xs">
+                      <Link to={`/orders/${o.id}`} className="btn-ghost px-3 py-1.5 text-sm">
                         View
                       </Link>
                       <button
                         type="button"
-                        className="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                        className="btn-ghost px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
                         onClick={() => setConfirmDelete(o)}
                       >
                         Cancel
