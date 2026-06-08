@@ -6,7 +6,6 @@ import { Toaster as HotToaster } from 'react-hot-toast'
 
 import App from './App.jsx'
 import { ThemeProvider } from './components/theme-provider.jsx'
-import { Toaster as SonnerToaster } from './components/ui/sonner.jsx'
 import { TooltipProvider } from './components/ui/tooltip.jsx'
 import './index.css'
 
@@ -35,7 +34,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   '!bg-card !text-card-foreground !border !border-border !shadow-md',
               }}
             />
-            <SonnerToaster />
           </BrowserRouter>
         </QueryClientProvider>
       </TooltipProvider>

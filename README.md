@@ -12,9 +12,10 @@ A full-stack, production-ready application for managing products, customers, and
 - **Server-trusted totals** — `total_amount` is computed from the product price snapshot at order time. The client never gets to set it.
 - **Uniqueness enforced at DB + application** — unique constraints on `products.sku` and `customers.email`, plus pre-flight checks with friendly 409 responses.
 - **Atomic cancellation** — deleting an order restores stock with the inverse atomic UPDATE.
-- **Production Dockerfiles** — multi-stage frontend (Node + Nginx), non-root user backend, healthchecks on both, slim base images.
-- **Health checks** — `/health` endpoint, container `HEALTHCHECK`, and Render `healthCheckPath` wired up.
-- **CORS configured** — explicit origins for local dev + regex pass-through for `*.vercel.app` preview deployments.
+- **Production Dockerfiles** — multi-stage builds for both backend (Python builder → slim runtime) and frontend (Node builder → Nginx runtime), non-root user backend, healthchecks on both, slim base images.
+- **Health checks** — `/health` endpoint verifies database connectivity (`SELECT 1`) and returns 503 on failure; container `HEALTHCHECK` and Render `healthCheckPath` wired up.
+- **CORS configured** — explicit origins for local dev + project-scoped regex for Vercel preview deployments (only this app's previews are allowed, not the entire `*.vercel.app` namespace).
+- **Security headers** — middleware sets HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, CSP, and Permissions-Policy on every response.
 - **Clean responsive UI** — Tailwind-styled, mobile-friendly, with toast notifications, modals, confirmation dialogs, and live subtotal preview on the order creation page.
 - **Tests pass** — 30/30 backend tests including the concurrency-correctness test.
 
@@ -282,7 +283,7 @@ See [`.env.example`](.env.example) for the full list. Highlights:
 | Variable              | Default                                       | Notes                                                       |
 | --------------------- | --------------------------------------------- | ----------------------------------------------------------- |
 | `DATABASE_URL`        | `sqlite:///./dev.db`                          | In Docker Compose it is set to the `db` service automatically. Render injects this when using the blueprint. |
-| `CORS_ORIGINS`        | `http://localhost:5173,http://localhost:3000` | Comma-separated. `*.vercel.app` is always allowed via regex. |
+| `CORS_ORIGINS`        | `http://localhost:5173,http://localhost:3000` | Comma-separated. A project-scoped regex (`CORS_ORIGIN_REGEX`) additionally allows this app's `*.vercel.app` preview URLs only. |
 | `LOW_STOCK_THRESHOLD` | `10`                                          | Below this value, products appear in the dashboard alert.    |
 | `VITE_API_URL`        | `http://localhost:8000`                       | Frontend build-time env — points the browser at the API.    |
 
