@@ -59,15 +59,6 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origin_list,
-        allow_origin_regex=r"https://.*\.vercel\.app",
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
     @app.exception_handler(BusinessError)
     async def _business_error_handler(_: Request, exc: BusinessError) -> JSONResponse:
         return JSONResponse(
