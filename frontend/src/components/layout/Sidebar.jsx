@@ -16,7 +16,7 @@ const QUICK = [
 ]
 
 const REPORTS = [
-  { to: '/', label: 'Analytics', icon: BarChart3, disabled: true },
+  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
 ]
 
 function NavItem({ to, label, icon: Icon, end, disabled }) {

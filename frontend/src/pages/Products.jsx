@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
+import { Link, useSearchParams } from 'react-router-dom'
 
-import { productsApi } from '../api/products.js'
 import { extractError } from '../api/client.js'
+import { dashboardApi } from '../api/dashboard.js'
+import { productsApi } from '../api/products.js'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import EmptyState from '../components/EmptyState.jsx'
 import Modal from '../components/Modal.jsx'
@@ -19,9 +21,22 @@ export default function Products() {
     queryKey: ['products'],
     queryFn: productsApi.list,
   })
+  const { data: dashboardData } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: dashboardApi.get,
+  })
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const filterLow = searchParams.get('filter') === 'low'
+  const threshold = dashboardData?.low_stock_threshold ?? 10
 
   const [editing, setEditing] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+
+  const filteredProducts = useMemo(
+    () => (filterLow ? data.filter((p) => p.quantity_in_stock <= threshold) : data),
+    [data, filterLow, threshold],
+  )
 
   const createMut = useMutation({
     mutationFn: productsApi.create,
@@ -82,14 +97,43 @@ export default function Products() {
         </button>
       </header>
 
-      {data.length === 0 ? (
+      {filterLow && (
+        <div className="flex items-center justify-between gap-3 rounded-md border border-warn/40 bg-warn/10 px-4 py-2 text-sm">
+          <span className="text-foreground">
+            Filtered: <strong>Low stock</strong> (≤ {threshold})
+          </span>
+          <button
+            type="button"
+            className="btn-ghost px-3 py-1.5 text-sm"
+            onClick={() => setSearchParams({})}
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
+
+      {filteredProducts.length === 0 ? (
         <EmptyState
-          title="No products yet"
-          description="Add your first product to get started."
+          title={filterLow ? 'No low-stock products' : 'No products yet'}
+          description={
+            filterLow
+              ? `All products are above the ${threshold}-unit threshold.`
+              : 'Add your first product to get started.'
+          }
           action={
-            <button type="button" className="btn-primary" onClick={() => setEditing('new')}>
-              Add product
-            </button>
+            filterLow ? (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setSearchParams({})}
+              >
+                Clear filter
+              </button>
+            ) : (
+              <button type="button" className="btn-primary" onClick={() => setEditing('new')}>
+                Add product
+              </button>
+            )
           }
         />
       ) : (
@@ -106,15 +150,22 @@ export default function Products() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-background">
-              {data.map((p) => (
+              {filteredProducts.map((p) => (
                 <tr key={p.id}>
                   <td className="table-td font-mono text-xs">{p.sku}</td>
-                  <td className="table-td font-medium text-foreground">{p.name}</td>
+                  <td className="table-td font-medium text-foreground">
+                    <Link
+                      to={`/products/${p.id}`}
+                      className="hover:text-primary hover:underline"
+                    >
+                      {p.name}
+                    </Link>
+                  </td>
                   <td className="table-td">{formatCurrency(p.price)}</td>
                   <td className="table-td">
                     <span
                       className={
-                        p.quantity_in_stock <= 10
+                        p.quantity_in_stock <= threshold
                           ? 'badge bg-amber-500/15 text-amber-700 dark:text-amber-300'
                           : 'badge bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
                       }

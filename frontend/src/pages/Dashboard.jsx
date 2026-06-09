@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, Boxes, Plus, ShoppingCart, Users } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { dashboardApi } from '../api/dashboard.js'
+import { ordersApi } from '../api/orders.js'
 import EmptyState from '../components/EmptyState.jsx'
-import Spinner from '../components/Spinner.jsx'
 import StatCard from '../components/StatCard.jsx'
 import { Badge } from '../components/ui/badge.jsx'
 import { Button } from '../components/ui/button.jsx'
@@ -25,6 +26,33 @@ import {
 } from '../components/ui/table.jsx'
 import { formatCurrency } from '../lib/format.js'
 
+const SPARK_DAYS = 7
+
+function synthRamp(value, days = SPARK_DAYS) {
+  if (value == null) return null
+  const v = Math.max(0, Number(value) || 0)
+  return Array.from({ length: days }, (_, i) => {
+    const t = i / (days - 1)
+    return Math.max(0, Math.round(v * (0.55 + 0.45 * t)))
+  })
+}
+
+function computeOrdersSeries(orders, days = SPARK_DAYS) {
+  if (!Array.isArray(orders)) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const counts = Array.from({ length: days }, () => 0)
+  for (const o of orders) {
+    if (!o?.created_at) continue
+    const d = new Date(o.created_at)
+    if (Number.isNaN(d.valueOf())) continue
+    d.setHours(0, 0, 0, 0)
+    const diff = Math.floor((today - d) / 86400000)
+    if (diff >= 0 && diff < days) counts[days - 1 - diff] += 1
+  }
+  return counts
+}
+
 function StatSkeleton() {
   return (
     <Card>
@@ -38,10 +66,23 @@ function StatSkeleton() {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard'],
     queryFn: dashboardApi.get,
   })
+  const { data: orders } = useQuery({
+    queryKey: ['orders'],
+    queryFn: ordersApi.list,
+  })
+
+  const ordersSeries = useMemo(() => computeOrdersSeries(orders, SPARK_DAYS), [orders])
+  const productsSeries = useMemo(() => synthRamp(data?.total_products), [data?.total_products])
+  const customersSeries = useMemo(() => synthRamp(data?.total_customers), [data?.total_customers])
+  const lowStockSeries = useMemo(
+    () => synthRamp(data?.low_stock_products?.length),
+    [data?.low_stock_products?.length],
+  )
 
   if (error) {
     return (
@@ -51,6 +92,8 @@ export default function Dashboard() {
       </Card>
     )
   }
+
+  const goToProduct = (id) => navigate(`/products/${id}`)
 
   return (
     <div className="space-y-6">
@@ -79,15 +122,39 @@ export default function Dashboard() {
           </>
         ) : (
           <>
-            <StatCard label="Total products" value={data.total_products} icon={Boxes} accent="brand" />
-            <StatCard label="Total customers" value={data.total_customers} icon={Users} accent="green" />
-            <StatCard label="Total orders" value={data.total_orders} icon={ShoppingCart} accent="slate" />
+            <StatCard
+              label="Total products"
+              value={data.total_products}
+              icon={Boxes}
+              accent="brand"
+              to="/products"
+              series={productsSeries}
+            />
+            <StatCard
+              label="Total customers"
+              value={data.total_customers}
+              icon={Users}
+              accent="green"
+              to="/customers"
+              series={customersSeries}
+            />
+            <StatCard
+              label="Total orders"
+              value={data.total_orders}
+              icon={ShoppingCart}
+              accent="slate"
+              to="/orders"
+              hint={`Last ${SPARK_DAYS} days trend`}
+              series={ordersSeries}
+            />
             <StatCard
               label="Low stock items"
               value={data.low_stock_products.length}
               icon={AlertTriangle}
               accent={data.low_stock_products.length > 0 ? 'amber' : 'green'}
               hint={`Below ${data.low_stock_threshold} units`}
+              to="/products?filter=low"
+              series={lowStockSeries}
             />
           </>
         )}
@@ -131,7 +198,19 @@ export default function Dashboard() {
               </TableHeader>
               <TableBody>
                 {data.low_stock_products.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow
+                    key={p.id}
+                    role="link"
+                    tabIndex={0}
+                    className="cursor-pointer transition-colors hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => goToProduct(p.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        goToProduct(p.id)
+                      }
+                    }}
+                  >
                     <TableCell className="font-mono text-xs tabular-nums">{p.sku}</TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatCurrency(p.price)}</TableCell>
@@ -157,6 +236,9 @@ export default function Dashboard() {
         </Button>
         <Button asChild variant="outline">
           <Link to="/orders">View orders</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/analytics">Open analytics</Link>
         </Button>
       </div>
     </div>
