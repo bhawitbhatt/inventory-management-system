@@ -93,9 +93,10 @@ PostgreSQL database and the web service, wiring `DATABASE_URL` for you.
 2. **New +** → **Web Service**. Connect the repo. Choose **Docker** as the
    runtime. Set **Root Directory** to `backend`. Set the health check path to
    `/health`. Add env vars:
-   - `DATABASE_URL` — paste the Internal Database URL
+   - `CORS_ORIGINS` — your Vercel domain, e.g. `https://your-app.vercel.app`
    - `CORS_ORIGINS` — your Vercel domain, e.g. `https://your-app.vercel.app`
    - `LOW_STOCK_THRESHOLD` — `10`
+   - `DOCS_ENABLED` — `false` (default). Set `true` only if you want the live `/docs` Swagger UI; note the strict CSP will block it unless you also extend `script-src`/`style-src` to allow `cdn.jsdelivr.net`.
 3. Create the service. Wait for **Live**.
 
 **Submission item:** the backend URL  
