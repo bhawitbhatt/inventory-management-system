@@ -12,7 +12,9 @@ class Product(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    sku: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    sku: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False, index=True
+    )
     price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     quantity_in_stock: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 

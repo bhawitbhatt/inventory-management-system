@@ -17,9 +17,9 @@ def _build_engine() -> Engine:
 
     # Render injects `postgres://` style URLs; SQLAlchemy 2 wants `postgresql+psycopg://`.
     if url.startswith("postgres://"):
-        url = "postgresql+psycopg://" + url[len("postgres://"):]
+        url = "postgresql+psycopg://" + url[len("postgres://") :]
     elif url.startswith("postgresql://"):
-        url = "postgresql+psycopg://" + url[len("postgresql://"):]
+        url = "postgresql+psycopg://" + url[len("postgresql://") :]
 
     connect_args: dict = {}
     if url.startswith("sqlite"):

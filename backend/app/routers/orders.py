@@ -9,17 +9,17 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 
 
 @router.get("", response_model=list[OrderRead])
-def list_orders(db: Session = Depends(get_db)) -> list:
+def list_orders(db: Session = Depends(get_db)) -> list[OrderRead]:
     return crud.list_orders(db)
 
 
 @router.post("", response_model=OrderRead, status_code=status.HTTP_201_CREATED)
-def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
+def create_order(payload: OrderCreate, db: Session = Depends(get_db)) -> OrderRead:
     return crud.create_order(db, payload)
 
 
 @router.get("/{order_id}", response_model=OrderRead)
-def get_order(order_id: int, db: Session = Depends(get_db)):
+def get_order(order_id: int, db: Session = Depends(get_db)) -> OrderRead:
     return crud.get_order(db, order_id)
 
 

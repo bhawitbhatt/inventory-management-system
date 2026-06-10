@@ -28,12 +28,14 @@ class Order(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    customer = relationship("Customer", lazy="joined")
+    # Relationships are loaded explicitly via selectinload/joinedload in CRUD
+    # (no `lazy="joined"`) — this avoids implicit Cartesian-shaped joins and
+    # double-loading when callers already opt in to a loader option.
+    customer = relationship("Customer")
     items = relationship(
         "OrderItem",
         back_populates="order",
         cascade="all, delete-orphan",
-        lazy="selectin",
     )
 
     __table_args__ = (
@@ -55,7 +57,7 @@ class OrderItem(Base):
     unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
 
     order = relationship("Order", back_populates="items")
-    product = relationship("Product", lazy="joined")
+    product = relationship("Product")
 
     __table_args__ = (
         CheckConstraint("quantity > 0", name="ck_order_items_quantity_positive"),

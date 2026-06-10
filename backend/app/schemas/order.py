@@ -1,10 +1,19 @@
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from .customer import CustomerRead
 from .product import ProductRead
+
+
+class OrderStatus(str, Enum):
+    """Canonical order status values. Stored as the string value in the DB."""
+
+    pending = "pending"
+    confirmed = "confirmed"
+    cancelled = "cancelled"
 
 
 class OrderItemCreate(BaseModel):
@@ -38,7 +47,7 @@ class OrderRead(BaseModel):
     id: int
     customer_id: int
     total_amount: Decimal
-    status: str
+    status: OrderStatus
     created_at: datetime
     customer: CustomerRead | None = None
     items: list[OrderItemRead] = []

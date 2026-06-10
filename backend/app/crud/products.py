@@ -6,6 +6,8 @@ from app.core.exceptions import ConflictError, NotFoundError
 from app.models import Product
 from app.schemas.product import ProductCreate, ProductUpdate
 
+from ._helpers import commit_or_409
+
 
 def list_products(db: Session) -> list[Product]:
     return list(db.scalars(select(Product).order_by(Product.id.desc())).all())
@@ -24,7 +26,8 @@ def get_product_by_sku(db: Session, sku: str) -> Product | None:
 
 def create_product(db: Session, payload: ProductCreate) -> Product:
     if get_product_by_sku(db, payload.sku) is not None:
-        raise ConflictError(f"Product with SKU '{payload.sku}' already exists.")
+        # Generic — does NOT echo the SKU value (enumeration safety).
+        raise ConflictError("A record with the same sku already exists.")
 
     product = Product(
         name=payload.name,
@@ -33,11 +36,7 @@ def create_product(db: Session, payload: ProductCreate) -> Product:
         quantity_in_stock=payload.quantity_in_stock,
     )
     db.add(product)
-    try:
-        db.commit()
-    except IntegrityError as exc:
-        db.rollback()
-        raise ConflictError(f"Product with SKU '{payload.sku}' already exists.") from exc
+    commit_or_409(db, field="sku")
     db.refresh(product)
     return product
 
@@ -53,16 +52,12 @@ def update_product(db: Session, product_id: int, payload: ProductUpdate) -> Prod
     if "sku" in data and data["sku"] != product.sku:
         existing = get_product_by_sku(db, data["sku"])
         if existing is not None and existing.id != product.id:
-            raise ConflictError(f"Product with SKU '{data['sku']}' already exists.")
+            raise ConflictError("A record with the same sku already exists.")
 
     for field, value in data.items():
         setattr(product, field, value)
 
-    try:
-        db.commit()
-    except IntegrityError as exc:
-        db.rollback()
-        raise ConflictError("Product update violates a uniqueness constraint.") from exc
+    commit_or_409(db, field="sku")
     db.refresh(product)
     return product
 

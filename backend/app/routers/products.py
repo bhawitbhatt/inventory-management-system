@@ -9,22 +9,26 @@ router = APIRouter(prefix="/products", tags=["products"])
 
 
 @router.get("", response_model=list[ProductRead])
-def list_products(db: Session = Depends(get_db)) -> list:
+def list_products(db: Session = Depends(get_db)) -> list[ProductRead]:
     return crud.list_products(db)
 
 
 @router.post("", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
-def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
+def create_product(
+    payload: ProductCreate, db: Session = Depends(get_db)
+) -> ProductRead:
     return crud.create_product(db, payload)
 
 
 @router.get("/{product_id}", response_model=ProductRead)
-def get_product(product_id: int, db: Session = Depends(get_db)):
+def get_product(product_id: int, db: Session = Depends(get_db)) -> ProductRead:
     return crud.get_product(db, product_id)
 
 
 @router.put("/{product_id}", response_model=ProductRead)
-def update_product(product_id: int, payload: ProductUpdate, db: Session = Depends(get_db)):
+def update_product(
+    product_id: int, payload: ProductUpdate, db: Session = Depends(get_db)
+) -> ProductRead:
     return crud.update_product(db, product_id, payload)
 
 

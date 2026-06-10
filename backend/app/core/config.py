@@ -27,13 +27,21 @@ class Settings(BaseSettings):
     )
 
     cors_origin_regex: str = Field(
-        default=r"^https://inventory-management-system-ten-omega(-[a-z0-9-]+)?\.vercel\.app$",
-        description="Regex matching the project's Vercel preview URLs. Empty disables regex.",
+        default="",
+        description=(
+            "Optional regex matching additional allowed origins (e.g. preview-deploy URLs). "
+            "Empty disables regex. Operator must set this explicitly for production deploys "
+            "that use ephemeral preview URLs; the default no longer hard-codes any project."
+        ),
     )
 
     docs_enabled: bool = Field(
-        default=True,
-        description="If false, /docs, /redoc, and /openapi.json are disabled (set false in prod).",
+        default=False,
+        description=(
+            "If true, /docs, /redoc, and /openapi.json are exposed. Default is false: "
+            "production deployments should opt in only after confirming CSP allows the "
+            "Swagger UI assets (cdn.jsdelivr.net). Set DOCS_ENABLED=true in .env for local dev."
+        ),
     )
 
     low_stock_threshold: int = Field(
