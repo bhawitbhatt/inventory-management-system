@@ -1,119 +1,187 @@
-import { useQuery } from '@tanstack/react-query'
+import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 
-import { ordersApi } from '../api/orders.js'
-import Spinner from '../components/Spinner.jsx'
+import { ErrorState } from '../components/ErrorState.jsx'
+import { PageHeader } from '../components/PageHeader.jsx'
+import { StatusBadge } from '../components/StatusBadge.jsx'
+import { Button } from '../components/ui/button.jsx'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card.jsx'
+import { Skeleton } from '../components/ui/skeleton.jsx'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui/table.jsx'
+import { useOrder } from '../hooks/use-orders.js'
 import { formatCurrency, formatDateTime } from '../lib/format.js'
+import { ROUTES } from '../lib/routes.js'
+
+const STATUS_VARIANT = {
+  confirmed: 'success',
+  pending: 'warn',
+  cancelled: 'muted',
+}
 
 export default function OrderDetail() {
   const { id } = useParams()
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['orders', id],
-    queryFn: () => ordersApi.get(id),
-  })
+  const orderId = Number(id)
+  const orderQ = useOrder(Number.isFinite(orderId) ? orderId : null)
 
-  if (isLoading) return <Spinner />
-  if (error) {
+  if (orderQ.isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-sm text-destructive">
-          Failed to load order: {error.message}
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Skeleton className="h-64 md:col-span-2" />
+          <Skeleton className="h-64" />
         </div>
-        <Link to="/orders" className="btn-secondary">
-          ← Back to orders
-        </Link>
       </div>
     )
   }
 
+  if (orderQ.error || !orderQ.data) {
+    return (
+      <div className="space-y-4">
+        <Button asChild variant="outline" size="sm">
+          <Link to={ROUTES.orders.list}>
+            <ArrowLeft className="h-4 w-4" />
+            All orders
+          </Link>
+        </Button>
+        <ErrorState
+          title="Couldn’t load order"
+          description={orderQ.error?.message ?? 'Order not found.'}
+          onRetry={() => orderQ.refetch()}
+        />
+      </div>
+    )
+  }
+
+  const order = orderQ.data
+
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-sm text-muted-foreground">Order</p>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            #{data.id}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Placed {formatDateTime(data.created_at)}
-          </p>
-        </div>
-        <Link to="/orders" className="btn-secondary">
-          ← All orders
+      <Button asChild variant="outline" size="sm">
+        <Link to={ROUTES.orders.list}>
+          <ArrowLeft className="h-4 w-4" />
+          All orders
         </Link>
-      </header>
+      </Button>
+
+      <PageHeader
+        title={`Order #${order.id}`}
+        description={`Placed ${formatDateTime(order.created_at)}`}
+        actions={
+          <StatusBadge variant={STATUS_VARIANT[order.status] ?? 'muted'}>
+            {order.status}
+          </StatusBadge>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <section className="card p-5 md:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">Items</h2>
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">Items</CardTitle>
+            <CardDescription className="text-xs">
+              {order.items.length} {order.items.length === 1 ? 'item' : 'items'}{' '}
+              · unit prices captured at order time
+            </CardDescription>
+          </CardHeader>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="table-th">Product</th>
-                  <th className="table-th">SKU</th>
-                  <th className="table-th">Unit price</th>
-                  <th className="table-th">Quantity</th>
-                  <th className="table-th text-right">Line total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border bg-background">
-                {data.items.map((it) => (
-                  <tr key={it.id}>
-                    <td className="table-td font-medium text-foreground">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead className="text-right">Unit price</TableHead>
+                  <TableHead className="text-right">Qty</TableHead>
+                  <TableHead className="text-right">Line total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {order.items.map((it) => (
+                  <TableRow key={it.id}>
+                    <TableCell className="font-medium">
                       {it.product?.name ?? `Product ${it.product_id}`}
-                    </td>
-                    <td className="table-td font-mono text-xs">
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
                       {it.product?.sku ?? '—'}
-                    </td>
-                    <td className="table-td">{formatCurrency(it.unit_price)}</td>
-                    <td className="table-td">{it.quantity}</td>
-                    <td className="table-td text-right font-semibold">
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatCurrency(it.unit_price)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {it.quantity}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums font-semibold">
                       {formatCurrency(it.line_total)}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-              <tfoot className="bg-muted">
-                <tr>
-                  <td className="table-td font-semibold" colSpan={4}>
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={4} className="font-semibold">
                     Total
-                  </td>
-                  <td className="table-td text-right text-lg font-bold">
-                    {formatCurrency(data.total_amount)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                  </TableCell>
+                  <TableCell className="text-right text-lg font-bold tabular-nums">
+                    {formatCurrency(order.total_amount)}
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
           </div>
-        </section>
+        </Card>
 
-        <section className="card p-5">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">Customer</h2>
-          {data.customer ? (
-            <dl className="space-y-2 text-sm">
-              <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Name</dt>
-                <dd className="font-medium text-foreground">{data.customer.full_name}</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Email</dt>
-                <dd className="text-foreground">{data.customer.email}</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Phone</dt>
-                <dd className="text-foreground">{data.customer.phone}</dd>
-              </div>
-            </dl>
-          ) : (
-            <p className="text-sm text-muted-foreground">Customer #{data.customer_id}</p>
-          )}
-          <hr className="my-4 border-border" />
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Status</p>
-          <p>
-            <span className="badge mt-1 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">{data.status}</span>
-          </p>
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">Customer</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {order.customer ? (
+              <dl className="space-y-3 text-sm">
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Name
+                  </dt>
+                  <dd className="mt-0.5 font-medium text-foreground">
+                    {order.customer.full_name}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Email
+                  </dt>
+                  <dd className="mt-0.5 text-foreground">
+                    {order.customer.email}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Phone
+                  </dt>
+                  <dd className="mt-0.5 tabular-nums text-foreground">
+                    {order.customer.phone}
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Customer #{order.customer_id}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

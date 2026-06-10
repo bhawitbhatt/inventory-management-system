@@ -1,27 +1,58 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Plus, ShoppingCart, Trash2 } from 'lucide-react'
+import { useMemo } from 'react'
+import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 
-import { customersApi } from '../api/customers.js'
-import { ordersApi } from '../api/orders.js'
-import { productsApi } from '../api/products.js'
 import { extractError } from '../api/client.js'
 import EmptyState from '../components/EmptyState.jsx'
-import Spinner from '../components/Spinner.jsx'
+import { ErrorState } from '../components/ErrorState.jsx'
+import { NativeSelect } from '../components/NativeSelect.jsx'
+import { PageHeader } from '../components/PageHeader.jsx'
+import { FormField } from '../components/forms/FormField.jsx'
+import { Button } from '../components/ui/button.jsx'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card.jsx'
+import { Input } from '../components/ui/input.jsx'
+import { Skeleton } from '../components/ui/skeleton.jsx'
+import { useCustomers } from '../hooks/use-customers.js'
+import { useCreateOrder } from '../hooks/use-orders.js'
+import { useProducts } from '../hooks/use-products.js'
 import { formatCurrency } from '../lib/format.js'
+import { ROUTES } from '../lib/routes.js'
+import { orderFormSchema } from '../schemas/order-form.js'
+
+const EMPTY_ITEM = { product_id: '', quantity: 1 }
+const DEFAULT_VALUES = { customer_id: '', items: [EMPTY_ITEM] }
 
 export default function OrderNew() {
   const navigate = useNavigate()
-  const qc = useQueryClient()
+  const customersQ = useCustomers()
+  const productsQ = useProducts()
+  const createMut = useCreateOrder()
 
-  const customersQ = useQuery({ queryKey: ['customers'], queryFn: customersApi.list })
-  const productsQ = useQuery({ queryKey: ['products'], queryFn: productsApi.list })
+  const {
+    control,
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(orderFormSchema),
+    defaultValues: DEFAULT_VALUES,
+  })
 
-  const [customerId, setCustomerId] = useState('')
-  const [items, setItems] = useState([{ product_id: '', quantity: 1 }])
+  const { fields, append, remove } = useFieldArray({ control, name: 'items' })
+  const watchedItems = watch('items')
 
-  const products = productsQ.data || []
+  const products = productsQ.data ?? []
+  const customers = customersQ.data ?? []
+
   const productMap = useMemo(() => {
     const m = new Map()
     for (const p of products) m.set(String(p.id), p)
@@ -30,217 +61,255 @@ export default function OrderNew() {
 
   const subtotal = useMemo(() => {
     let total = 0
-    for (const it of items) {
+    for (const it of watchedItems ?? []) {
       const p = productMap.get(String(it.product_id))
-      if (p && Number(it.quantity) > 0) {
-        total += Number(p.price) * Number(it.quantity)
-      }
+      const qty = Number(it.quantity)
+      if (p && qty > 0) total += Number(p.price) * qty
     }
     return total
-  }, [items, productMap])
+  }, [watchedItems, productMap])
 
-  const createMut = useMutation({
-    mutationFn: ordersApi.create,
-    onSuccess: (order) => {
-      toast.success(`Order #${order.id} created`)
-      qc.invalidateQueries({ queryKey: ['orders'] })
-      qc.invalidateQueries({ queryKey: ['products'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
-      navigate(`/orders/${order.id}`)
-    },
-    onError: (e) => toast.error(extractError(e)),
+  const onSubmit = handleSubmit((values) => {
+    // Client-side stock pre-check intentionally REMOVED — the server's atomic
+    // compare-and-swap is the single source of truth. If stock is insufficient
+    // the POST returns 409 and the inline error banner surfaces it.
+    createMut.mutate(values, {
+      onSuccess: (order) => {
+        navigate(ROUTES.orders.detail(order.id))
+      },
+    })
   })
 
-  const isLoading = customersQ.isLoading || productsQ.isLoading
-  if (isLoading) return <Spinner />
-
-  const customers = customersQ.data || []
-  if (customers.length === 0 || products.length === 0) {
+  if (customersQ.isLoading || productsQ.isLoading) {
     return (
-      <EmptyState
-        title="Not ready to create orders"
-        description={
-          customers.length === 0
-            ? 'Add at least one customer first.'
-            : 'Add at least one product first.'
-        }
-        action={
-          <Link
-            to={customers.length === 0 ? '/customers' : '/products'}
-            className="btn-primary"
-          >
-            {customers.length === 0 ? 'Add customer' : 'Add product'}
-          </Link>
-        }
-      />
+      <div className="space-y-6">
+        <PageHeader
+          title="New order"
+          description="Pick a customer, add line items, and confirm."
+        />
+        <div className="space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      </div>
     )
   }
 
-  function updateItem(index, patch) {
-    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)))
+  if (customers.length === 0 || products.length === 0) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="New order"
+          description="Pick a customer, add line items, and confirm."
+        />
+        <EmptyState
+          icon={ShoppingCart}
+          title="Not ready to create orders"
+          description={
+            customers.length === 0
+              ? 'Add at least one customer first.'
+              : 'Add at least one product first.'
+          }
+          action={
+            <Button asChild>
+              <Link
+                to={customers.length === 0 ? ROUTES.customers : ROUTES.products.list}
+              >
+                {customers.length === 0 ? 'Add customer' : 'Add product'}
+              </Link>
+            </Button>
+          }
+        />
+      </div>
+    )
   }
 
-  function addItem() {
-    setItems((prev) => [...prev, { product_id: '', quantity: 1 }])
-  }
-
-  function removeItem(index) {
-    setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== index)))
-  }
-
-  function onSubmit(e) {
-    e.preventDefault()
-    if (!customerId) {
-      toast.error('Select a customer')
-      return
-    }
-    const valid = items.filter((it) => it.product_id && Number(it.quantity) > 0)
-    if (valid.length === 0) {
-      toast.error('Add at least one item')
-      return
-    }
-    const aggregated = new Map()
-    for (const it of valid) {
-      const key = String(it.product_id)
-      aggregated.set(key, (aggregated.get(key) || 0) + Number(it.quantity))
-    }
-    for (const [pid, qty] of aggregated) {
-      const p = productMap.get(pid)
-      if (p && p.quantity_in_stock < qty) {
-        toast.error(
-          `Insufficient stock for "${p.name}": requested ${qty}, available ${p.quantity_in_stock}`,
-        )
-        return
-      }
-    }
-
-    createMut.mutate({
-      customer_id: Number(customerId),
-      items: valid.map((it) => ({
-        product_id: Number(it.product_id),
-        quantity: Number(it.quantity),
-      })),
-    })
-  }
+  const itemsError = errors.items?.message
+  const submitError = createMut.isError ? extractError(createMut.error) : null
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">New order</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Pick a customer, add line items, and confirm. Stock is decremented automatically.
-        </p>
-      </header>
+      <PageHeader
+        title="New order"
+        description="Pick a customer, add line items, and confirm. Stock is decremented atomically on confirmation."
+      />
 
-      <form className="space-y-6" onSubmit={onSubmit}>
-        <section className="card p-5">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">
-            <label htmlFor="order-customer">Customer</label>
-          </h2>
-          <select
-            id="order-customer"
-            className="input"
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-          >
-            <option value="">Select customer…</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.full_name} — {c.email}
-              </option>
-            ))}
-          </select>
-        </section>
+      <form onSubmit={onSubmit} className="space-y-6" noValidate>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">Customer</CardTitle>
+            <CardDescription className="text-xs">
+              Who is this order for?
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FormField
+              label="Customer"
+              htmlFor="order-customer"
+              error={errors.customer_id?.message}
+              required
+            >
+              <Controller
+                control={control}
+                name="customer_id"
+                render={({ field }) => (
+                  <NativeSelect
+                    id="order-customer"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  >
+                    <option value="">Select customer…</option>
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.full_name} — {c.email}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                )}
+              />
+            </FormField>
+          </CardContent>
+        </Card>
 
-        <section className="card p-5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground">Items</h2>
-            <button type="button" className="btn-secondary text-xs" onClick={addItem}>
-              + Add item
-            </button>
-          </div>
-          <div className="mt-3 space-y-3">
-            {items.map((it, index) => {
-              const p = productMap.get(String(it.product_id))
-              const lineTotal = p ? Number(p.price) * Number(it.quantity || 0) : 0
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-sm font-semibold">Items</CardTitle>
+              <CardDescription className="text-xs">
+                Pick products and quantities. Server validates stock.
+              </CardDescription>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => append(EMPTY_ITEM)}
+            >
+              <Plus className="h-4 w-4" />
+              Add item
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {fields.map((field, index) => {
+              const watched = watchedItems?.[index]
+              const product = productMap.get(String(watched?.product_id))
+              const lineTotal =
+                product && Number(watched?.quantity) > 0
+                  ? Number(product.price) * Number(watched.quantity)
+                  : 0
+              const itemErrors = errors.items?.[index]
               const productId = `order-item-${index}-product`
               const quantityId = `order-item-${index}-quantity`
               return (
                 <div
-                  key={index}
-                  className="grid grid-cols-1 gap-3 rounded-md border border-border p-3 sm:grid-cols-[1fr_120px_120px_auto] sm:items-end"
+                  key={field.id}
+                  className="grid grid-cols-1 gap-3 rounded-md border border-border bg-muted/30 p-3 sm:grid-cols-[1fr_120px_140px_auto] sm:items-end"
                 >
-                  <div>
-                    <label className="label" htmlFor={productId}>Product</label>
-                    <select
-                      id={productId}
-                      className="input"
-                      value={it.product_id}
-                      onChange={(e) => updateItem(index, { product_id: e.target.value })}
-                    >
-                      <option value="">Select product…</option>
-                      {products.map((prod) => (
-                        <option key={prod.id} value={prod.id}>
-                          {prod.name} ({prod.sku}) · stock {prod.quantity_in_stock}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label" htmlFor={quantityId}>Quantity</label>
-                    <input
+                  <FormField
+                    label="Product"
+                    htmlFor={productId}
+                    error={itemErrors?.product_id?.message}
+                  >
+                    <Controller
+                      control={control}
+                      name={`items.${index}.product_id`}
+                      render={({ field: f }) => (
+                        <NativeSelect
+                          id={productId}
+                          value={f.value}
+                          onChange={f.onChange}
+                          onBlur={f.onBlur}
+                        >
+                          <option value="">Select product…</option>
+                          {products.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} ({p.sku}) · stock {p.quantity_in_stock}
+                            </option>
+                          ))}
+                        </NativeSelect>
+                      )}
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="Quantity"
+                    htmlFor={quantityId}
+                    error={itemErrors?.quantity?.message}
+                  >
+                    <Input
                       id={quantityId}
                       type="number"
                       min="1"
                       step="1"
-                      className="input"
-                      value={it.quantity}
-                      onChange={(e) =>
-                        updateItem(index, { quantity: Number(e.target.value) || 0 })
-                      }
+                      inputMode="numeric"
+                      {...register(`items.${index}.quantity`)}
                     />
-                  </div>
-                  <div>
-                    <span className="label block">Line total</span>
-                    <div className="input bg-muted font-medium">
-                      {formatCurrency(lineTotal)}
-                    </div>
-                  </div>
-                  <button
+                  </FormField>
+
+                  <FormField label="Line total" htmlFor={`${quantityId}-total`}>
+                    <Input
+                      id={`${quantityId}-total`}
+                      readOnly
+                      className="bg-muted/60 font-medium tabular-nums"
+                      value={formatCurrency(lineTotal)}
+                      tabIndex={-1}
+                    />
+                  </FormField>
+
+                  <Button
                     type="button"
-                    className="btn-ghost px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
-                    onClick={() => removeItem(index)}
-                    disabled={items.length === 1}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => remove(index)}
+                    disabled={fields.length === 1}
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Remove item ${index + 1}`}
                   >
-                    Remove
-                  </button>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               )
             })}
-          </div>
-        </section>
+            {itemsError ? (
+              <p className="text-xs text-destructive" role="alert">
+                {itemsError}
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
 
-        <section className="card p-5">
-          <div className="flex items-center justify-between">
+        <Card>
+          <CardContent className="flex items-center justify-between gap-4 py-5">
             <span className="text-sm text-muted-foreground">
-              Server will recompute the total — this is a preview.
+              Server recomputes the total from the price snapshot at order time.
             </span>
             <div className="text-right">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Subtotal</p>
-              <p className="text-2xl font-semibold text-foreground">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Subtotal preview
+              </p>
+              <p className="text-2xl font-semibold tabular-nums text-foreground">
                 {formatCurrency(subtotal)}
               </p>
             </div>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
 
-        <div className="flex justify-end gap-3">
-          <Link to="/orders" className="btn-secondary">
-            Cancel
-          </Link>
-          <button type="submit" className="btn-primary" disabled={createMut.isPending}>
-            {createMut.isPending ? 'Creating…' : 'Create order'}
-          </button>
+        {submitError ? (
+          <ErrorState
+            title="Couldn’t place this order"
+            description={submitError}
+          />
+        ) : null}
+
+        <div className="flex justify-end gap-2">
+          <Button asChild variant="outline" disabled={createMut.isPending}>
+            <Link to={ROUTES.orders.list}>Cancel</Link>
+          </Button>
+          <Button type="submit" disabled={createMut.isPending}>
+            {createMut.isPending ? 'Placing order…' : 'Create order'}
+          </Button>
         </div>
       </form>
     </div>
