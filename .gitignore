@@ -66,3 +66,7 @@ pnpm-debug.log*
 # Original assessment briefs — kept locally for reference, not committed
 Assesment Instructions.txt
 Technical Assessment (Software Engineer).txt
+
+# ===== Tooling artifacts (not part of project) =====
+.opencode/
+.omo/
