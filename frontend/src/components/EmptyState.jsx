@@ -5,7 +5,7 @@ import { cn } from '../lib/utils.js'
 export default function EmptyState({ title, description, action, icon: Icon = Inbox, className }) {
   return (
     <div className={cn('rounded-xl border border-dashed border-border bg-card/50 px-6 py-12 text-center', className)}>
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-50 dark:text-brand-700">
         <Icon className="h-6 w-6" aria-hidden />
       </div>
       <h3 className="mt-4 text-sm font-semibold text-foreground">{title}</h3>

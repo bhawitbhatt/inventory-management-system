@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { cn } from '../lib/utils.js'
 
 const accentClasses = {
-  brand: 'bg-primary/10 text-primary',
+  brand: 'bg-brand-100 text-brand-700 dark:bg-brand-100 dark:text-brand-700',
   amber: 'bg-warn/15 text-warn',
   green: 'bg-success/15 text-success',
   slate: 'bg-muted text-muted-foreground',

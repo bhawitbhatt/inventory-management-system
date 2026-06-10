@@ -1,15 +1,8 @@
-import {
-  Boxes,
-  LayoutDashboard,
-  Moon,
-  Plus,
-  ShoppingCart,
-  Sun,
-  Users,
-} from 'lucide-react'
+import { Moon, Plus, Sun } from 'lucide-react'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { NAV_ITEMS, ROUTES } from '../../lib/routes.js'
 import {
   CommandDialog,
   CommandEmpty,
@@ -28,7 +21,11 @@ export function useCommandPaletteShortcut(setOpen) {
       if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         setOpen((o) => !o)
-      } else if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+      } else if (
+        e.key === '/' &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA'
+      ) {
         e.preventDefault()
         setOpen(true)
       }
@@ -46,7 +43,7 @@ export function CommandPalette({ open, onOpenChange }) {
     navigate(path)
     onOpenChange(false)
   }
-  const theme = (mode) => {
+  const pickTheme = (mode) => {
     setTheme(mode)
     onOpenChange(false)
   }
@@ -57,30 +54,22 @@ export function CommandPalette({ open, onOpenChange }) {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Navigate">
-          <CommandItem onSelect={() => go('/')}>
-            <LayoutDashboard />
-            <span>Dashboard</span>
-            <CommandShortcut>G D</CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => go('/products')}>
-            <Boxes />
-            <span>Products</span>
-            <CommandShortcut>G P</CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => go('/customers')}>
-            <Users />
-            <span>Customers</span>
-            <CommandShortcut>G C</CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => go('/orders')}>
-            <ShoppingCart />
-            <span>Orders</span>
-            <CommandShortcut>G O</CommandShortcut>
-          </CommandItem>
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon
+            return (
+              <CommandItem
+                key={item.path}
+                onSelect={() => go(item.path)}
+              >
+                <Icon />
+                <span>{item.label}</span>
+              </CommandItem>
+            )
+          })}
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => go('/orders/new')}>
+          <CommandItem onSelect={() => go(ROUTES.orders.new)}>
             <Plus />
             <span>New order</span>
             <CommandShortcut>N</CommandShortcut>
@@ -88,15 +77,15 @@ export function CommandPalette({ open, onOpenChange }) {
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Theme">
-          <CommandItem onSelect={() => theme('light')}>
+          <CommandItem onSelect={() => pickTheme('light')}>
             <Sun />
             <span>Light mode</span>
           </CommandItem>
-          <CommandItem onSelect={() => theme('dark')}>
+          <CommandItem onSelect={() => pickTheme('dark')}>
             <Moon />
             <span>Dark mode</span>
           </CommandItem>
-          <CommandItem onSelect={() => theme('system')}>
+          <CommandItem onSelect={() => pickTheme('system')}>
             <span className="h-4 w-4" />
             <span>System theme</span>
           </CommandItem>

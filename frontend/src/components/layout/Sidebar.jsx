@@ -1,52 +1,24 @@
-import { BarChart3, Boxes, LayoutDashboard, Plus, ShoppingCart, Users } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet.jsx'
 import { cn } from '../../lib/utils.js'
+import { NAV_GROUPS, ROUTES } from '../../lib/routes.js'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet.jsx'
 
-const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/products', label: 'Products', icon: Boxes },
-  { to: '/customers', label: 'Customers', icon: Users },
-  { to: '/orders', label: 'Orders', icon: ShoppingCart },
-]
-
-const QUICK = [
-  { to: '/orders/new', label: 'New order', icon: Plus },
-]
-
-const REPORTS = [
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-]
-
-function NavItem({ to, label, icon: Icon, end, disabled }) {
-  if (disabled) {
-    return (
-      <span
-        className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground/60"
-        title="Coming soon"
-      >
-        <Icon className="h-4 w-4 shrink-0" />
-        {label}
-        <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide">soon</span>
-      </span>
-    )
-  }
+function NavItem({ to, label, icon: Icon, end }) {
   return (
     <NavLink
       to={to}
       end={end}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-          'border-l-2',
+          'flex items-center gap-3 rounded-md border-l-2 px-3 py-2 text-sm font-medium transition-colors',
           isActive
-            ? 'bg-accent text-accent-foreground border-primary'
-            : 'border-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+            ? 'border-primary bg-brand-50 text-brand-900 dark:bg-brand-50 dark:text-brand-900'
+            : 'border-transparent text-muted-foreground hover:bg-accent/60 hover:text-foreground',
         )
       }
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
       {label}
     </NavLink>
   )
@@ -56,36 +28,52 @@ function SidebarContent() {
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-border px-4 py-4">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/symbol.svg" alt="" className="h-7 w-7 text-primary" />
+        <Link
+          to={ROUTES.dashboard}
+          className="flex items-center gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <img
+            src="/symbol.svg"
+            alt=""
+            className="h-7 w-7 text-primary"
+            aria-hidden="true"
+          />
           <div className="leading-tight">
-            <div className="text-base font-semibold tracking-tight">Stocky</div>
-            <div className="text-[11px] text-muted-foreground">Inventory · Orders</div>
+            <div className="text-base font-semibold tracking-tight text-foreground">
+              Stocky
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              Inventory · Orders
+            </div>
           </div>
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto p-3">
-        <div className="space-y-1">
-          {NAV.map((it) => <NavItem key={it.to + it.label} {...it} />)}
-        </div>
-        <div>
-          <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Quick</div>
-          <div className="space-y-1">
-            {QUICK.map((it) => <NavItem key={it.to + it.label} {...it} />)}
+      <nav className="flex-1 space-y-6 overflow-y-auto p-3" aria-label="Main">
+        {NAV_GROUPS.map((group, gi) => (
+          <div key={group.label ?? `group-${gi}`}>
+            {group.label ? (
+              <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {group.label}
+              </div>
+            ) : null}
+            <div className="space-y-1">
+              {group.items.map((it) => (
+                <NavItem
+                  key={it.path}
+                  to={it.path}
+                  end={it.exact}
+                  label={it.label}
+                  icon={it.icon}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-        <div>
-          <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Reports</div>
-          <div className="space-y-1">
-            {REPORTS.map((it) => <NavItem key={it.to + it.label} {...it} />)}
-          </div>
-        </div>
+        ))}
       </nav>
 
-      <div className="border-t border-border p-4 text-xs text-muted-foreground">
-        <div>v1.0.0 · Demo</div>
-        <div className="mt-1">Built with FastAPI + React</div>
+      <div className="border-t border-border p-4 text-[11px] text-muted-foreground">
+        <p>Built with FastAPI, React, and PostgreSQL.</p>
       </div>
     </div>
   )

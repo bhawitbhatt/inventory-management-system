@@ -1,14 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle, Boxes, Plus, ShoppingCart, Users } from 'lucide-react'
+import {
+  AlertTriangle,
+  Boxes,
+  DollarSign,
+  ShoppingCart,
+  Users,
+} from 'lucide-react'
 import { useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import { dashboardApi } from '../api/dashboard.js'
-import { ordersApi } from '../api/orders.js'
 import EmptyState from '../components/EmptyState.jsx'
+import { ErrorState } from '../components/ErrorState.jsx'
+import { PageHeader } from '../components/PageHeader.jsx'
 import StatCard from '../components/StatCard.jsx'
-import { Badge } from '../components/ui/badge.jsx'
-import { Button } from '../components/ui/button.jsx'
+import { StatusBadge } from '../components/StatusBadge.jsx'
 import {
   Card,
   CardDescription,
@@ -24,101 +30,106 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table.jsx'
+import { useOrders } from '../hooks/use-orders.js'
 import { formatCurrency } from '../lib/format.js'
+import { dashboardKeys } from '../lib/query-keys.js'
+import { ROUTES } from '../lib/routes.js'
 
 const SPARK_DAYS = 7
 
-function synthRamp(value, days = SPARK_DAYS) {
-  if (value == null) return null
-  const v = Math.max(0, Number(value) || 0)
-  return Array.from({ length: days }, (_, i) => {
-    const t = i / (days - 1)
-    return Math.max(0, Math.round(v * (0.55 + 0.45 * t)))
-  })
+function greetingForHour(hour) {
+  if (hour < 5) return 'Good evening'
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
 }
 
-function computeOrdersSeries(orders, days = SPARK_DAYS) {
-  if (!Array.isArray(orders)) return null
+/**
+ * Aggregate orders into `days` buckets keyed by day-of-creation.
+ * `valueFn(order)` returns the contribution of one order to its bucket.
+ * Returns a fixed-length array (oldest first → today last) or `null` if
+ * orders isn't a non-empty array.
+ */
+function bucketByDay(orders, valueFn, days = SPARK_DAYS) {
+  if (!Array.isArray(orders) || orders.length === 0) return null
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const counts = Array.from({ length: days }, () => 0)
+  const buckets = Array.from({ length: days }, () => 0)
   for (const o of orders) {
     if (!o?.created_at) continue
     const d = new Date(o.created_at)
     if (Number.isNaN(d.valueOf())) continue
     d.setHours(0, 0, 0, 0)
-    const diff = Math.floor((today - d) / 86400000)
-    if (diff >= 0 && diff < days) counts[days - 1 - diff] += 1
+    const diff = Math.floor((today.valueOf() - d.valueOf()) / 86_400_000)
+    if (diff >= 0 && diff < days) buckets[days - 1 - diff] += valueFn(o)
   }
-  return counts
-}
-
-function StatSkeleton() {
-  return (
-    <Card>
-      <div className="p-6">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="mt-3 h-8 w-16" />
-        <Skeleton className="mt-2 h-3 w-32" />
-      </div>
-    </Card>
-  )
+  return buckets
 }
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['dashboard'],
+  const dashboardQ = useQuery({
+    queryKey: dashboardKeys.all,
     queryFn: dashboardApi.get,
   })
-  const { data: orders } = useQuery({
-    queryKey: ['orders'],
-    queryFn: ordersApi.list,
-  })
+  const ordersQ = useOrders()
 
-  const ordersSeries = useMemo(() => computeOrdersSeries(orders, SPARK_DAYS), [orders])
-  const productsSeries = useMemo(() => synthRamp(data?.total_products), [data?.total_products])
-  const customersSeries = useMemo(() => synthRamp(data?.total_customers), [data?.total_customers])
-  const lowStockSeries = useMemo(
-    () => synthRamp(data?.low_stock_products?.length),
-    [data?.low_stock_products?.length],
+  const ordersSeries = useMemo(
+    () => bucketByDay(ordersQ.data, () => 1, SPARK_DAYS),
+    [ordersQ.data],
   )
+  const revenueSeries = useMemo(
+    () =>
+      bucketByDay(
+        ordersQ.data,
+        (o) => Number(o.total_amount) || 0,
+        SPARK_DAYS,
+      ),
+    [ordersQ.data],
+  )
+  const totalRevenue = useMemo(() => {
+    if (!Array.isArray(ordersQ.data)) return 0
+    return ordersQ.data.reduce(
+      (a, o) => a + (Number(o.total_amount) || 0),
+      0,
+    )
+  }, [ordersQ.data])
 
-  if (error) {
+  const goToProduct = (id) => navigate(ROUTES.products.detail(id))
+
+  if (dashboardQ.error) {
     return (
-      <Card className="border-destructive/40 bg-destructive/10 p-5 text-sm text-destructive-foreground">
-        <div className="font-medium text-destructive">Failed to load dashboard</div>
-        <div className="mt-1 text-muted-foreground">{error.message}</div>
-      </Card>
+      <div className="space-y-6">
+        <PageHeader
+          title="Dashboard"
+          description="Today's overview."
+        />
+        <ErrorState
+          title="Couldn’t load dashboard"
+          description={dashboardQ.error.message}
+          onRetry={() => dashboardQ.refetch()}
+        />
+      </div>
     )
   }
 
-  const goToProduct = (id) => navigate(`/products/${id}`)
+  const data = dashboardQ.data
+  const isLoading = dashboardQ.isLoading || !data
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Here's what's happening across your inventory today.
-          </p>
-        </div>
-        <Button asChild className="shrink-0">
-          <Link to="/orders/new">
-            <Plus className="h-4 w-4" />
-            New order
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={greetingForHour(new Date().getHours())}
+        description="Here's what's happening across your inventory today."
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {isLoading || !data ? (
+        {isLoading ? (
           <>
-            <StatSkeleton />
-            <StatSkeleton />
-            <StatSkeleton />
-            <StatSkeleton />
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
           </>
         ) : (
           <>
@@ -127,34 +138,31 @@ export default function Dashboard() {
               value={data.total_products}
               icon={Boxes}
               accent="brand"
-              to="/products"
-              series={productsSeries}
+              to={ROUTES.products.list}
             />
             <StatCard
               label="Total customers"
               value={data.total_customers}
               icon={Users}
               accent="green"
-              to="/customers"
-              series={customersSeries}
+              to={ROUTES.customers}
             />
             <StatCard
               label="Total orders"
               value={data.total_orders}
               icon={ShoppingCart}
               accent="slate"
-              to="/orders"
-              hint={`Last ${SPARK_DAYS} days trend`}
+              to={ROUTES.orders.list}
+              hint={`Last ${SPARK_DAYS} days`}
               series={ordersSeries}
             />
             <StatCard
-              label="Low stock items"
-              value={data.low_stock_products.length}
-              icon={AlertTriangle}
-              accent={data.low_stock_products.length > 0 ? 'amber' : 'green'}
-              hint={`Below ${data.low_stock_threshold} units`}
-              to="/products?filter=low"
-              series={lowStockSeries}
+              label="Revenue"
+              value={formatCurrency(totalRevenue)}
+              icon={DollarSign}
+              accent="info"
+              hint={`Last ${SPARK_DAYS} days`}
+              series={revenueSeries}
             />
           </>
         )}
@@ -163,20 +171,26 @@ export default function Dashboard() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
-            <CardTitle className="text-sm font-semibold">Low stock alerts</CardTitle>
+            <CardTitle className="text-sm font-semibold">
+              Low stock alerts
+            </CardTitle>
             <CardDescription className="text-xs">
-              Products with quantity below {data?.low_stock_threshold ?? '—'} units.
+              Products with quantity below{' '}
+              {data?.low_stock_threshold ?? '—'} units.
             </CardDescription>
           </div>
-          {data && data.low_stock_products.length > 0 && (
-            <Badge variant="warn">{data.low_stock_products.length} need attention</Badge>
-          )}
+          {data && data.low_stock_products.length > 0 ? (
+            <StatusBadge variant="warn">
+              <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+              {data.low_stock_products.length} need attention
+            </StatusBadge>
+          ) : null}
         </CardHeader>
-        {isLoading || !data ? (
+        {isLoading ? (
           <div className="space-y-3 p-6">
-            <Skeleton className="h-8" />
-            <Skeleton className="h-8" />
-            <Skeleton className="h-8" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
           </div>
         ) : data.low_stock_products.length === 0 ? (
           <div className="p-6">
@@ -211,13 +225,19 @@ export default function Dashboard() {
                       }
                     }}
                   >
-                    <TableCell className="font-mono text-xs tabular-nums">{p.sku}</TableCell>
+                    <TableCell className="font-mono text-xs tabular-nums">
+                      {p.sku}
+                    </TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatCurrency(p.price)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatCurrency(p.price)}
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Badge variant="warn" className="font-mono tabular-nums">
+                      <StatusBadge
+                        variant={p.quantity_in_stock === 0 ? 'danger' : 'warn'}
+                      >
                         {p.quantity_in_stock}
-                      </Badge>
+                      </StatusBadge>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -226,21 +246,6 @@ export default function Dashboard() {
           </div>
         )}
       </Card>
-
-      <div className="flex flex-wrap gap-3">
-        <Button asChild variant="outline">
-          <Link to="/products">Manage products</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link to="/customers">Manage customers</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link to="/orders">View orders</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link to="/analytics">Open analytics</Link>
-        </Button>
-      </div>
     </div>
   )
 }
