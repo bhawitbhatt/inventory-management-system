@@ -5,6 +5,7 @@ The DATABASE_URL env var is set BEFORE the app is imported so that the
 module-level engine in `app.core.database` uses an isolated, file-based
 SQLite database under the test temp dir. Each test gets a fresh schema.
 """
+
 from __future__ import annotations
 
 import os

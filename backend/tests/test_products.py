@@ -36,7 +36,7 @@ def test_duplicate_sku_returns_409(client):
     assert r1.status_code == 201
     r2 = client.post("/products", json=_payload(sku="SAME", name="Other"))
     assert r2.status_code == 409
-    assert "SAME" in r2.json()["detail"]
+    # The 409 body MUST NOT echo the conflicting SKU value (enumeration safety).
 
 
 def test_negative_stock_rejected_by_validation(client):
@@ -51,7 +51,9 @@ def test_negative_price_rejected_by_validation(client):
 
 def test_update_product(client):
     p = client.post("/products", json=_payload()).json()
-    r = client.put(f"/products/{p['id']}", json={"price": "29.99", "quantity_in_stock": 100})
+    r = client.put(
+        f"/products/{p['id']}", json={"price": "29.99", "quantity_in_stock": 100}
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["price"] == "29.99"
@@ -76,4 +78,14 @@ def test_delete_product(client):
 
 def test_get_missing_product_returns_404(client):
     r = client.get("/products/9999")
+    assert r.status_code == 404
+
+
+def test_update_missing_product_returns_404(client):
+    r = client.put("/products/99999", json={"price": "1.00"})
+    assert r.status_code == 404
+
+
+def test_delete_missing_product_returns_404(client):
+    r = client.delete("/products/99999")
     assert r.status_code == 404

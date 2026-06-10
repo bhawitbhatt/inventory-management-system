@@ -5,7 +5,12 @@ from decimal import Decimal
 def _mk_product(client, sku="P-1", price="10.00", qty=20):
     return client.post(
         "/products",
-        json={"name": f"Item {sku}", "sku": sku, "price": price, "quantity_in_stock": qty},
+        json={
+            "name": f"Item {sku}",
+            "sku": sku,
+            "price": price,
+            "quantity_in_stock": qty,
+        },
     ).json()
 
 
@@ -52,7 +57,10 @@ def test_order_with_insufficient_stock_rejected(client):
     c = _mk_customer(client)
     r = client.post(
         "/orders",
-        json={"customer_id": c["id"], "items": [{"product_id": p["id"], "quantity": 10}]},
+        json={
+            "customer_id": c["id"],
+            "items": [{"product_id": p["id"], "quantity": 10}],
+        },
     )
     assert r.status_code == 409
     # No partial decrement — stock still 3
@@ -88,7 +96,10 @@ def test_order_zero_quantity_rejected(client):
     c = _mk_customer(client)
     r = client.post(
         "/orders",
-        json={"customer_id": c["id"], "items": [{"product_id": p["id"], "quantity": 0}]},
+        json={
+            "customer_id": c["id"],
+            "items": [{"product_id": p["id"], "quantity": 0}],
+        },
     )
     assert r.status_code == 422
 
@@ -98,11 +109,17 @@ def test_get_list_orders(client):
     c = _mk_customer(client)
     client.post(
         "/orders",
-        json={"customer_id": c["id"], "items": [{"product_id": p["id"], "quantity": 1}]},
+        json={
+            "customer_id": c["id"],
+            "items": [{"product_id": p["id"], "quantity": 1}],
+        },
     )
     client.post(
         "/orders",
-        json={"customer_id": c["id"], "items": [{"product_id": p["id"], "quantity": 2}]},
+        json={
+            "customer_id": c["id"],
+            "items": [{"product_id": p["id"], "quantity": 2}],
+        },
     )
     r = client.get("/orders")
     assert r.status_code == 200
@@ -114,7 +131,10 @@ def test_delete_order_restores_stock(client):
     c = _mk_customer(client)
     order = client.post(
         "/orders",
-        json={"customer_id": c["id"], "items": [{"product_id": p["id"], "quantity": 3}]},
+        json={
+            "customer_id": c["id"],
+            "items": [{"product_id": p["id"], "quantity": 3}],
+        },
     ).json()
 
     assert client.get(f"/products/{p['id']}").json()["quantity_in_stock"] == 7
@@ -198,3 +218,48 @@ def test_order_ignores_client_supplied_total(client):
     )
     assert r.status_code == 201
     assert Decimal(r.json()["total_amount"]) == Decimal("150.00")
+
+
+def test_concurrent_delete_order_restores_stock_once(client):
+    (
+        """""Two simultaneous DELETE /orders/{id} requests must restore stock EXACTLY ONCE.
+
+    Before the fix in :func:`delete_order`, two concurrent cancels could both pass the
+    initial SELECT (FOR UPDATE is a no-op on SQLite), both restore stock, and double-credit.
+    The new implementation uses a DELETE compare-and-swap on the order row: only one
+    caller's ``DELETE`` returns ``rowcount == 1``; every other observer rolls back BEFORE
+    touching stock and returns 404.
+    """
+        ""
+    )
+    p = _mk_product(client, sku="CANCEL-RACE", qty=10)
+    c = _mk_customer(client)
+    order = client.post(
+        "/orders",
+        json={
+            "customer_id": c["id"],
+            "items": [{"product_id": p["id"], "quantity": 3}],
+        },
+    ).json()
+
+    # Stock decremented to 7
+    assert client.get(f"/products/{p['id']}").json()["quantity_in_stock"] == 7
+
+    def cancel():
+        return client.delete(f"/orders/{order['id']}").status_code
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [executor.submit(cancel) for _ in range(4)]
+        results = sorted(f.result() for f in futures)
+
+    # Exactly one 204 (winner) and the rest 404 (losers — order already deleted).
+    successes = sum(1 for r in results if r == 204)
+    not_founds = sum(1 for r in results if r == 404)
+    assert successes == 1, f"expected exactly one 204, got {results}"
+    assert not_founds == 3, f"expected three 404s, got {results}"
+
+    # Stock restored EXACTLY ONCE — back to 10, never 13/16/19.
+    final = client.get(f"/products/{p['id']}").json()
+    assert final["quantity_in_stock"] == 10, (
+        f"stock was restored more than once: {final['quantity_in_stock']} (expected 10)"
+    )

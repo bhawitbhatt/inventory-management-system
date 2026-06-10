@@ -53,3 +53,37 @@ def test_root_endpoint(client):
     r = client.get("/")
     assert r.status_code == 200
     assert "docs" in r.json()
+
+
+def test_health_returns_503_when_db_unreachable(client):
+    (
+        """""/health must return 503 when the DB is unreachable, not 200.
+
+    Implementation: ``app.routers.health.health`` does ``db.execute(select(1))`` and
+    translates SQLAlchemyError into ``BusinessError(..., status_code=503)``. This test
+    overrides ``get_db`` with a session whose ``execute`` raises, pinning the 503 path.
+    """
+        ""
+    )
+    from sqlalchemy.exc import OperationalError
+
+    from app.core.database import get_db
+    from app.main import app
+
+    class _BrokenSession:
+        def execute(self, *_args, **_kwargs):
+            raise OperationalError("simulated", None, Exception("unreachable"))
+
+        def close(self):
+            pass
+
+    def _broken_db():
+        yield _BrokenSession()
+
+    app.dependency_overrides[get_db] = _broken_db
+    try:
+        r = client.get("/health")
+        assert r.status_code == 503
+        assert "detail" in r.json()
+    finally:
+        app.dependency_overrides.pop(get_db, None)
