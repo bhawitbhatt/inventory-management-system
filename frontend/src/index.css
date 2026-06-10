@@ -36,7 +36,7 @@
   --info-foreground: 0 0% 100%;
   --shadow-color: 222 47% 11%;
   --radius: 0.625rem;
-  /* Brand tonal scale — teal-derived */
+  /* Brand tonal scale — teal-derived (light mode reads light → dark) */
   --brand-50:  166 76% 97%;
   --brand-100: 167 85% 89%;
   --brand-200: 168 84% 78%;
@@ -70,7 +70,25 @@
   --primary-foreground: 222 47% 9%;
   --destructive: 0 70% 55%;
   --destructive-foreground: 210 20% 96%;
+  --success: 152 60% 50%;
+  --success-foreground: 222 47% 9%;
+  --warn: 38 90% 60%;
+  --warn-foreground: 222 47% 9%;
+  --info: 199 85% 60%;
+  --info-foreground: 222 47% 9%;
   --shadow-color: 222 60% 4%;
+  /* Brand tonal scale — inverted lightness so brand-50 = darkest, brand-950 = lightest */
+  --brand-50:  176 61% 14%;
+  --brand-100: 176 69% 18%;
+  --brand-200: 175 77% 22%;
+  --brand-300: 173 80% 30%;
+  --brand-400: 173 80% 40%;
+  --brand-500: 173 80% 50%;
+  --brand-600: 172 66% 60%;
+  --brand-700: 171 77% 72%;
+  --brand-800: 168 84% 82%;
+  --brand-900: 167 85% 90%;
+  --brand-950: 166 76% 96%;
 }
 
 /* ============================================================================
@@ -126,52 +144,6 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
-  }
-}
-
-/* ============================================================================
-   Component layer — keep @apply to native tailwind atoms only
-   ========================================================================== */
-@layer components {
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
-  }
-  .btn-primary    { @apply btn bg-primary text-primary-foreground hover:bg-primary/90; }
-  .btn-secondary  { @apply btn bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border; }
-  .btn-danger     { @apply btn bg-destructive text-destructive-foreground hover:bg-destructive/90; }
-  .btn-ghost      { @apply btn text-foreground hover:bg-accent hover:text-accent-foreground; }
-  .btn-outline    { @apply btn border border-border bg-transparent hover:bg-accent hover:text-accent-foreground; }
-  .input {
-    @apply flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
-  }
-  .label {
-    @apply block text-sm font-medium text-foreground mb-1.5;
-  }
-  .card {
-    @apply rounded-xl border border-border bg-card text-card-foreground shadow-sm;
-  }
-  .badge {
-    @apply inline-flex items-center rounded-full border border-transparent px-2.5 py-0.5 text-xs font-semibold transition-colors;
-  }
-  .badge-success { @apply bg-success text-success-foreground; }
-  .badge-warn    { @apply bg-warn text-warn-foreground; }
-  .badge-info    { @apply bg-info text-info-foreground; }
-  .badge-danger  { @apply bg-destructive text-destructive-foreground; }
-  .badge-muted   { @apply bg-muted text-muted-foreground; }
-  .table-th {
-    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
-  }
-  .table-td {
-    @apply px-4 py-3 text-sm text-foreground;
-  }
-  .table-td-mono {
-    @apply px-4 py-3 text-sm text-foreground font-mono tabular-nums;
-  }
-  .table-td-numeric {
-    @apply px-4 py-3 text-sm text-foreground text-right tabular-nums;
-  }
-  .skeleton {
-    @apply animate-pulse rounded-md bg-muted;
   }
 }
 
